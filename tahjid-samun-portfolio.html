@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Md Tahjid Islam Samun · The Harbor</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --nv:#1f3a5f; --or:#f28c28; --paper:#f7f4ee; --ink:#1d2b3a; --soft:#5b6878; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; overflow:hidden; background:#9fd6f0; color:var(--ink); font-family:'Barlow',sans-serif; }
+  #scene{ position:fixed; inset:0; display:block; touch-action:none; }
+  .mono{ font-family:ui-monospace,Menlo,monospace; font-size:0.8em; }
+
+  #intro{ position:fixed; inset:0; z-index:90; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;
+    background:linear-gradient(180deg, rgba(159,214,240,0.75), rgba(247,244,238,0.92)); transition:opacity .8s, visibility .8s; }
+  #intro.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
+  #intro .tape{ width:180px; height:10px; margin-bottom:22px; background:repeating-linear-gradient(-45deg, var(--or) 0 14px, var(--nv) 14px 28px); border-radius:2px; }
+  #intro h1{ font-family:'Barlow Condensed',sans-serif; font-size:clamp(2.2rem,7vw,4rem); margin:0 0 6px; color:var(--nv); text-transform:uppercase; letter-spacing:0.02em; line-height:1; }
+  #intro h2{ font-weight:600; color:var(--or); margin:0 0 22px; text-transform:uppercase; letter-spacing:0.16em; font-size:clamp(0.78rem,2.3vw,1rem); }
+  #intro p{ max-width:480px; color:var(--soft); line-height:1.6; margin:0 0 30px; font-size:0.95rem; }
+  #enterBtn{ font-family:'Barlow Condensed',sans-serif; font-size:1.15rem; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer;
+    background:var(--or); color:#fff; border:none; padding:14px 38px; border-radius:4px; box-shadow:0 6px 0 #b8611a; transition:transform .1s, box-shadow .1s; }
+  #enterBtn:active{ transform:translateY(4px); box-shadow:0 2px 0 #b8611a; }
+
+  #hint{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:20; pointer-events:none; white-space:nowrap;
+    font-size:0.8rem; color:#fff; background:rgba(31,58,95,0.85); padding:8px 16px; border-radius:4px; transition:opacity 1s; }
+  #hint.fade{ opacity:0; }
+
+  #labels{ position:fixed; inset:0; z-index:15; pointer-events:none; overflow:hidden; }
+  .label{ position:absolute; left:0; top:0; white-space:nowrap; cursor:pointer; pointer-events:auto;
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.85rem; letter-spacing:0.04em; text-transform:uppercase; color:var(--nv);
+    background:#fff; border-left:5px solid var(--or); padding:4px 10px 4px 8px; border-radius:2px; box-shadow:0 4px 12px rgba(31,58,95,0.3); transition:opacity .25s; }
+  .label .ic{ margin-right:5px; }
+  .label.center{ background:var(--nv); color:#fff; font-size:0.95rem; }
+  .label.visited{ border-left-color:#2ecc71; }
+
+  #nav{ position:fixed; left:16px; top:16px; z-index:30; max-width:210px; padding:12px 10px; background:rgba(247,244,238,0.95); border-radius:6px; box-shadow:0 6px 20px rgba(31,58,95,0.25); border-top:6px solid var(--nv); }
+  #navTitle{ display:flex; justify-content:space-between; cursor:pointer; user-select:none; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.95rem; letter-spacing:0.08em; color:var(--nv); text-transform:uppercase; }
+  #nav .chev{ transition:transform .25s; } #nav.collapsed .chev{ transform:rotate(-90deg); }
+  #nav.collapsed #navCount, #nav.collapsed #navList{ display:none; }
+  #navCount{ font-size:0.72rem; color:var(--soft); margin:2px 0 8px; }
+  .navBtn{ display:flex; align-items:center; gap:8px; width:100%; background:none; border:none; color:var(--ink); font-family:inherit; font-size:0.84rem; padding:6px; border-radius:3px; cursor:pointer; text-align:left; }
+  .navBtn:hover{ background:rgba(242,140,40,0.14); }
+  .navBtn .dot{ width:10px; height:10px; border-radius:2px; background:#c8c2b4; flex-shrink:0; }
+  .navBtn.visited .dot{ background:#2ecc71; }
+  .navBtn.active{ background:rgba(31,58,95,0.1); font-weight:600; }
+
+  .pill{ position:fixed; right:16px; top:16px; z-index:32; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.95rem; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer;
+    color:#fff; background:var(--nv); border:none; padding:9px 16px; border-radius:4px; box-shadow:0 4px 12px rgba(31,58,95,0.3); }
+
+  #panel{ position:fixed; top:0; right:0; height:100%; width:420px; max-width:92vw; z-index:40; overflow-y:auto; padding:34px 28px 50px;
+    background:var(--paper); box-shadow:-10px 0 40px rgba(31,58,95,0.25); transform:translateX(100%); transition:transform .5s cubic-bezier(.25,.9,.3,1); }
+  #panel::before{ content:''; position:absolute; top:0; left:0; right:0; height:10px; background:repeating-linear-gradient(-45deg, var(--or) 0 14px, var(--nv) 14px 28px); }
+  #panel.open{ transform:translateX(0); }
+  #closePanel{ position:absolute; top:20px; right:16px; width:34px; height:34px; border-radius:4px; border:none; background:var(--nv); color:#fff; font-size:1.2rem; cursor:pointer; }
+  #panel .eyebrow{ font-size:0.72rem; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--or); margin-bottom:2px; }
+  #panel h2{ font-family:'Barlow Condensed',sans-serif; font-size:1.9rem; text-transform:uppercase; margin:0 0 2px; color:var(--nv); line-height:1.05; padding-right:36px; }
+  #panel .tag{ color:var(--soft); font-size:0.92rem; margin:0 0 18px; }
+  #panel .lead{ font-size:0.94rem; line-height:1.6; margin:0 0 16px; }
+  #panel h3{ font-family:'Barlow Condensed',sans-serif; font-size:1.05rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--nv); margin:22px 0 10px; padding-bottom:5px; border-bottom:2px solid var(--or); display:inline-block; }
+  #panel .meta{ display:flex; flex-direction:column; gap:6px; font-size:0.9rem; margin-bottom:10px; }
+  #panel a{ color:var(--nv); font-weight:600; }
+  #panel ul.plain{ list-style:none; padding:0; margin:0; }
+  #panel ul.plain li{ position:relative; padding:10px 12px 10px 14px; margin-bottom:10px; font-size:0.9rem; line-height:1.5; background:#fff; border-left:4px solid var(--nv); border-radius:2px; box-shadow:0 2px 6px rgba(31,58,95,0.08); }
+  #panel ul.plain .sub{ display:block; color:var(--soft); font-size:0.84rem; margin-top:3px; }
+  #panel .chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  #panel .chip{ font-size:0.8rem; padding:4px 10px; border-radius:3px; background:var(--nv); color:#fff; }
+  #panel .note{ font-size:0.8rem; color:var(--soft); font-style:italic; }
+  .panelNav{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:28px; padding-top:14px; border-top:1px solid #ddd5c5; }
+  .panelNav button{ font-family:inherit; font-size:0.78rem; font-weight:600; background:none; border:2px solid var(--nv); color:var(--nv); padding:6px 10px; border-radius:4px; cursor:pointer; }
+  .panelNav button:hover{ background:var(--nv); color:#fff; }
+  .panelNav span{ font-size:0.74rem; color:var(--soft); }
+
+  @media (max-width:720px){
+    #panel{ top:auto; bottom:0; left:0; width:100%; max-width:100%; height:72vh; border-radius:14px 14px 0 0; transform:translateY(100%); }
+    #panel::before{ border-radius:14px 14px 0 0; }
+    #panel.open{ transform:translateY(0); }
+    .label{ font-size:0.72rem; padding:3px 7px; }
+    #nav{ max-width:165px; } .pill{ font-size:0.8rem; padding:8px 12px; }
+    #hint{ font-size:0.7rem; }
+  }
+</style>
+</head>
+<body>
+<div id="intro">
+  <div class="tape"></div>
+  <h1>Md Tahjid Islam Samun</h1>
+  <h2>Industrial &amp; Production Engineering</h2>
+  <p>Welcome to the harbor. Trucks run the ring road, a cargo ship circles the island and every building holds a chapter — drag to look around and tap any stop to open it.</p>
+  <button id="enterBtn">Enter the Port</button>
+</div>
+<canvas id="scene"></canvas>
+<div id="labels"></div>
+<div id="hint">drag to look around · scroll / pinch to zoom · tap a building</div>
+<div id="nav"><div id="navTitle"><span>Port Map</span><span class="chev">▾</span></div><div id="navCount"></div><div id="navList"></div></div>
+<button id="homeBtn" class="pill">⌂ Overview</button>
+<div id="panel"><button id="closePanel" aria-label="Close">×</button><div id="panelContent"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ================= CORE (shared low-poly helpers) ================= */
+const D2R = Math.PI/180, TAU = Math.PI*2;
+let _seed = 4242;
+const srand = ()=> (_seed = (_seed*16807) % 2147483647) / 2147483647;
+const rnd = (a,b)=> a + srand()*(b-a);
+const clamp = (v,a,b)=> Math.max(a, Math.min(b, v));
+const polar = (deg, r)=> ({ x:Math.sin(deg*D2R)*r, z:Math.cos(deg*D2R)*r });
+
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 1, 900);
+const anims = [];
+
+const _mats = {};
+function mat(c, opts){
+  if(typeof c !== 'number') return c;
+  const k = c + (opts ? JSON.stringify(opts) : '');
+  if(!_mats[k]) _mats[k] = new THREE.MeshPhongMaterial(Object.assign({ color:c, flatShading:true, shininess:6 }, opts||{}));
+  return _mats[k];
+}
+function add(geo, c, x, y, z, p){ const m = new THREE.Mesh(geo, mat(c)); m.position.set(x||0, y||0, z||0); (p||scene).add(m); return m; }
+function B(w,h,d,c,x,y,z,p){ return add(new THREE.BoxGeometry(w,h,d), c, x, (y||0)+h/2, z, p); }
+function C(rt,rb,h,seg,c,x,y,z,p){ return add(new THREE.CylinderGeometry(rt,rb,h,seg), c, x, (y||0)+h/2, z, p); }
+function K(r,h,seg,c,x,y,z,p){ return add(new THREE.ConeGeometry(r,h,seg), c, x, (y||0)+h/2, z, p); }
+function S(r,c,x,y,z,p,detail){ return add(new THREE.IcosahedronGeometry(r, detail||0), c, x, y, z, p); }
+// triangular prism (gable roof): width w, height h, depth d, base at y
+function prism(w,h,d,c,x,y,z,p){ const m = add(new THREE.CylinderGeometry(1,1,1,3), c, x, 0, z, p); m.rotation.x = -Math.PI/2; m.scale.set(w/1.732, d, h/1.5); m.position.y = (y||0) + h/3; return m; }
+
+/* ================= THEME: HARBOR LOGISTICS (Md Tahjid Islam Samun) ================= */
+const RING = 26, COUNT_WORD = 'stops visited';
+const OR = 0xf28c28, NV = 0x1f3a5f, WALL = 0xf1ece2, BASE = 0xbdb7a8, GLASS = 0x6fb3d9;
+scene.background = new THREE.Color(0x9fd6f0);
+scene.fog = new THREE.Fog(0xc4e6f5, 110, 300);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x6f7f4f, 0.8));
+const dirL = new THREE.DirectionalLight(0xfff0d0, 0.85); dirL.position.set(40, 70, 30); scene.add(dirL);
+
+function flat(geo, c, y){ const m = add(geo, c, 0, y, 0); m.rotation.x = -Math.PI/2; return m; }
+function windows(g, w, y, z, n, h){ for(let i=0;i<n;i++){ const x = -w/2 + w*(i+0.5)/n; B(w/n*0.55, h||1, 0.06, GLASS, x, y, z, g); } }
+const doubleSided = c=> mat(c, { side:THREE.DoubleSide });
+
+/* island, road, water */
+flat(new THREE.CircleGeometry(440, 40), 0x3a9fc0, -0.4);
+flat(new THREE.CircleGeometry(78, 30), 0xe6d39a, 0);
+flat(new THREE.CircleGeometry(72, 30), 0xa7c47a, 0.06);
+flat(new THREE.CircleGeometry(11.5, 30), 0xd2cdc0, 0.12);
+flat(new THREE.RingGeometry(16, 19.5, 60), 0x44474f, 0.14);
+for(let a=0;a<360;a+=8){ const p = polar(a, 17.75); const d = B(0.2, 0.02, 1.2, 0xffffff, p.x, 0.15, p.z); d.rotation.y = a*D2R + Math.PI/2; }
+
+/* trucks on the ring road */
+const trucks = [];
+[OR, 0x2f7fbf, 0xc0392b].forEach((col, i)=>{
+  const t = new THREE.Group();
+  B(1.3,1.2,1.1, 0xf4f4f4, 0,0.35,1.35, t); B(1.15,0.45,0.05, 0x2b3a4a, 0,0.95,1.92, t);
+  B(1.35,1.4,2.6, col, 0,0.35,-0.5, t);
+  for(const [x,z] of [[-0.66,1.3],[0.66,1.3],[-0.66,-1.2],[0.66,-1.2]]) add(new THREE.CylinderGeometry(0.3,0.3,0.25,8), 0x222222, x,0.3,z, t).rotation.z = Math.PI/2;
+  scene.add(t); trucks.push({ t, a:i*TAU/3, s:5 + i });
+});
+anims.push(dt=> trucks.forEach(o=>{ o.a += dt*o.s/17; o.t.position.set(Math.sin(o.a)*17, 0.15, Math.cos(o.a)*17); o.t.rotation.y = o.a + Math.PI/2; }));
+
+/* cargo ship sailing round the island */
+const ship = new THREE.Group();
+B(4,1.8,15, 0x9b2d2d, 0,-0.6,0, ship); B(4.05,0.25,15.05, 0x2b2b2b, 0,-0.6,0, ship);
+B(3.2,2.6,2.6, 0xf4f4f4, 0,1.2,-5.6, ship); B(3.3,0.3,2.8, NV, 0,3.8,-5.6, ship); C(0.35,0.4,1.4,6, OR, 0,4.1,-6.2, ship);
+const cCols = [OR, 0x2f7fbf, 0x3f8a4a, 0xc0392b, 0xe0b23a];
+for(let r=0;r<4;r++) for(let s=0;s<2;s++) for(let l=0;l<1+(r+s)%2;l++) B(1.5,1,2.6, cCols[(r*2+s+l)%5], s?0.8:-0.8, 1.2+l, -2.4+r*2.9, ship);
+scene.add(ship);
+let shipA = 0.6;
+anims.push((dt,t)=>{ shipA += dt*0.025; ship.position.set(Math.sin(shipA)*105, Math.sin(t)*0.12, Math.cos(shipA)*105); ship.rotation.y = shipA + Math.PI/2; ship.rotation.z = Math.sin(t*0.8)*0.02; });
+
+/* clouds */
+const clouds = [];
+for(let i=0;i<8;i++){
+  const c = new THREE.Group();
+  for(let k=0;k<4;k++){ const p = S(rnd(2.5,4.5), 0xffffff, k*3.5-5, rnd(-0.5,1), rnd(-1.5,1.5), c); p.scale.y = 0.6; }
+  const p = polar(rnd(0,360), rnd(30,120)); c.position.set(p.x, rnd(40,55), p.z); scene.add(c); clouds.push(c);
+}
+anims.push(dt=> clouds.forEach(c=>{ c.position.x += dt*1.5; if(c.position.x > 140) c.position.x = -140; }));
+
+function tree(x, z, s){ C(0.18*s,0.26*s,1*s,5,0x6b4a2b, x,0,z); K(1.3*s,2.6*s,6,0x3f8a4a, x,0.8*s,z); K(0.95*s,2*s,6,0x4f9e55, x,2.1*s,z); }
+
+function afterBuild(){
+  // roads out to each building
+  SECTIONS.forEach(s=>{
+    if(s.center) return;
+    const a = s.angle*D2R, r0 = 11.5, r1 = RING-3, L = r1-r0, mid = r0 + L/2;
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(3, L), mat(0x55585f)); p.rotation.x = -Math.PI/2; p.rotation.z = -a; p.position.set(Math.sin(a)*mid, 0.13, Math.cos(a)*mid); scene.add(p);
+  });
+  // pier with a gantry crane
+  const pa = 180/ringCount, pr = 77, pp = polar(pa, pr);
+  const pier = new THREE.Group(); pier.position.set(pp.x, 0, pp.z); pier.rotation.y = pa*D2R; scene.add(pier);
+  B(5,0.5,16, 0x8a6a44, 0,0,0, pier);
+  for(let z=-7;z<=7;z+=3.5) for(const x of [-2.2,2.2]) C(0.2,0.2,1.4,6,0x5a4630, x,-1.2,z, pier);
+  for(const z of [-2.5,2.5]) for(const x of [-2,2]) B(0.4,9,0.4, OR, x,0.5,z, pier);
+  B(0.6,0.7,14, OR, -2,9.5,2, pier); B(0.6,0.7,14, OR, 2,9.5,2, pier); B(4.6,0.5,0.5, OR, 0,9.6,-2.5, pier); B(4.6,0.5,0.5, OR, 0,9.6,2.5, pier);
+  const trolley = new THREE.Group(); trolley.position.y = 9.3; pier.add(trolley);
+  B(4.4,0.6,1.4, NV, 0,0.5,0, trolley); B(0.06,4,0.06, 0x333333, 0,-3.6,0, trolley); B(1.5,1.2,2.6, 0x2f7fbf, 0,-4.8,0, trolley);
+  anims.push((dt,t)=>{ trolley.position.z = Math.sin(t*0.35)*5.5 + 1.5; });
+  // trees, avoiding buildings, roads and the pier
+  for(let i=0;i<70;i++){
+    const ang = rnd(0,360), r = rnd(36,68), p = polar(ang, r);
+    if(SECTIONS.some(s=> Math.hypot(p.x-s.pos.x, p.z-s.pos.z) < 10)) continue;
+    const da = ((ang - pa + 540) % 360) - 180;
+    if(Math.abs(da) < 7 && r > 60) continue;
+    tree(p.x, p.z, rnd(0.8,1.4));
+  }
+  // small trees ringing the plaza
+  for(let i=0;i<ringCount;i++){ const p = polar((i+0.5)*360/ringCount, 13.6); tree(p.x, p.z, 0.7); }
+}
+
+/* ================= SECTIONS ================= */
+const SECTIONS = [
+{ id:'office', name:'Port Office', icon:'🏢', center:true, labelH:13.5, camR:26, focusY:4,
+  build(g){
+    B(12,0.5,9, BASE, 0,0,0, g); B(10,4,7, WALL, 0,0.5,0, g); B(10.6,0.4,7.6, NV, 0,4.5,0, g);
+    B(7,3,5, WALL, 0,4.9,0, g); B(7.6,0.4,5.6, NV, 0,7.9,0, g);
+    windows(g, 9, 1.7, 3.53, 6, 1.3); windows(g, 6, 5.6, 2.53, 4, 1.2); windows(g, 9, 1.7, -3.53, 6, 1.3);
+    B(1.6,2.4,0.08, NV, 0,0.5,3.56, g); B(5,0.8,0.15, OR, 0,3.4,3.6, g);
+    C(0.08,0.1,5,6, 0x999999, 2.6,8.3,1.4, g);
+    const flag = add(new THREE.PlaneGeometry(1.6,1), doubleSided(OR), 0,0,0, g); flag.geometry.translate(0.8,0,0); flag.position.set(2.65,12.7,1.4);
+    anims.push((dt,t)=>{ flag.rotation.y = Math.sin(t*2.2)*0.35; });
+  },
+  content:`
+    <div class="eyebrow">Port Office · Profile</div>
+    <h2>Md Tahjid Islam Samun</h2>
+    <p class="tag">Lecturer, Dept. of IPE, NITER · Supply Chain Optimization</p>
+    <p class="lead">An Industrial &amp; Production Engineering graduate from RUET, now teaching at NITER. Published work on supply chain optimization, with research focused on facility location, vehicle routing and supply chain risk assessment.</p>
+    <div class="meta">
+      <span>📍 Khulna, Bangladesh</span>
+      <span>✉️ <a href="mailto:tahjidislamsamun@gmail.com">tahjidislamsamun@gmail.com</a></span>
+      <span>📞 <a href="tel:+8801575537406">01575 537 406</a></span>
+    </div>
+    <h3>Focus Areas</h3>
+    <div class="chips"><span class="chip">Facility Location</span><span class="chip">Vehicle Routing</span><span class="chip">Supply Chain Risk</span><span class="chip">MILP</span><span class="chip">Predictive Analytics</span></div>
+    <h3>References</h3>
+    <ul class="plain">
+      <li><strong>Dr. Md. Asadujjaman</strong><span class="sub">Professor &amp; Head, Dept. of IPE, RUET</span></li>
+      <li><strong>Dr. Shahed Mahmud</strong><span class="sub">Professor, Dept. of IPE, RUET</span></li>
+    </ul>
+    <p class="note">Contact details for references available on request.</p>`
+},
+{ id:'campus', name:'RUET Campus', icon:'🎓', labelH:9.5,
+  build(g){
+    B(10.5,0.6,8, BASE, 0,0,0, g); B(9,3.8,5, 0xe9dcc6, 0,0.6,-0.8, g);
+    for(const x of [-3.6,-1.8,0,1.8,3.6]) C(0.28,0.32,3.8,8, 0xffffff, x,0.6,2.8, g);
+    B(9.8,0.6,6.6, 0xf5f0e6, 0,4.4,0.2, g); B(9.2,0.6,5.2, 0x9c4b3a, 0,5.0,-0.9, g);
+    prism(9.6,1.8,1.4, 0xf5f0e6, 0,5.0,2.8, g);
+    B(1.6,2.4,0.08, NV, 0,0.6,1.74, g);
+  },
+  content:`
+    <div class="eyebrow">Education</div><h2>RUET Campus</h2><p class="tag">Industrial &amp; Production Engineering, twice over</p>
+    <ul class="plain">
+      <li><strong>Rajshahi University of Engineering &amp; Technology</strong><span class="sub">M.Sc. in Industrial &amp; Production Engineering</span><span class="sub mono">2025 – Present</span></li>
+      <li><strong>Rajshahi University of Engineering &amp; Technology</strong><span class="sub">B.Sc. in Industrial &amp; Production Engineering — CGPA 3.79</span><span class="sub mono">2020 – 2025</span></li>
+      <li><strong>Govt. Majeed Memorial City College, Khulna</strong><span class="sub">HSC — GPA 5.00</span><span class="sub mono">2017 – 2019</span></li>
+      <li><strong>Lions School and College, Khulna</strong><span class="sub">SSC — GPA 5.00</span><span class="sub mono">2012 – 2017</span></li>
+    </ul>`
+},
+{ id:'hall', name:'Lecture Hall', icon:'👨‍🏫', labelH:8.5,
+  build(g){
+    B(9,0.4,7, BASE, 0,0,0, g); B(8,3.6,6, 0xdfe7ee, 0,0.4,0, g); prism(8.8,2.4,6.6, NV, 0,4,0, g);
+    B(5.4,2.4,0.1, 0x8a6a44, 0,1.1,3.04, g); B(5,2,0.12, 0x2e4a3a, 0,1.3,3.06, g);
+    B(3,0.06,0.02, 0xffffff, -0.4,2.7,3.13, g); B(2.2,0.06,0.02, 0xffffff, -0.8,2.3,3.13, g); B(2.6,0.06,0.02, 0xffffff, -0.6,1.9,3.13, g);
+    B(0.9,1.1,0.6, 0x8a6a44, 2.6,0.4,4.4, g);
+    windows(g, 5, 1.8, -3.03, 3, 1.4);
+  },
+  content:`
+    <div class="eyebrow">Teaching</div><h2>Lecture Hall</h2><p class="tag">Chalk on the board</p>
+    <ul class="plain">
+      <li><strong>Lecturer — Department of IPE, NITER</strong><span class="sub mono">December 2025 – Present</span><span class="sub">Delivers undergraduate lectures and academic guidance, and carries out research in Industrial &amp; Production Engineering and related areas.</span></li>
+    </ul>`
+},
+{ id:'research', name:'Research Center', icon:'📊', labelH:9.5,
+  build(g){
+    B(8,0.4,7, BASE, 0,0,0, g); B(7,5,6, 0xe8eef2, 0,0.4,0, g); B(7.05,0.5,6.05, OR, 0,3.4,0, g);
+    windows(g, 6, 1.6, 3.03, 4, 1.4); windows(g, 6, 4.4, 3.03, 4, 0.8);
+    const dish = new THREE.Group(); dish.position.set(-1.6,5.4,0); g.add(dish);
+    C(0.15,0.2,1,6, 0x999999, 0,0,0, dish);
+    const bowl = add(new THREE.SphereGeometry(1.4,10,4,0,TAU,0,Math.PI/2.6), doubleSided(0xffffff), 0,1.6,0, dish); bowl.rotation.x = Math.PI*0.75;
+    const gear = new THREE.Group(); gear.position.set(1.8,0,3.15); gear.position.y = 2.2; g.add(gear);
+    add(new THREE.CylinderGeometry(0.9,0.9,0.2,10), 0x555b66, 0,0,0, gear).rotation.x = Math.PI/2;
+    for(let k=0;k<10;k++){ const a = k/10*TAU; const tooth = add(new THREE.BoxGeometry(0.3,0.3,0.2), 0x555b66, Math.cos(a)*1, Math.sin(a)*1, 0, gear); tooth.rotation.z = a; }
+    anims.push((dt,t)=>{ dish.rotation.y = t*0.4; gear.rotation.z = t*0.8; });
+  },
+  content:`
+    <div class="eyebrow">Research Experience</div><h2>Research Center</h2><p class="tag">Optimization models for real supply chains</p>
+    <ul class="plain">
+      <li><strong>Research Assistant — Dept. of IPE, RUET</strong><span class="sub mono">July 2025 – Present</span><span class="sub">Studying adaptive capacity optimization in integrated supply–production planning, modelling workforce learning, forgetting, fatigue and recovery. Building optimization and predictive models (e.g. RL, ANN) to improve workforce allocation and handle demand uncertainty.</span></li>
+      <li><strong>Undergraduate Thesis — Dept. of IPE, RUET</strong><span class="sub mono">March 2024 – June 2025</span><span class="sub"><em>Hybrid Supply Chain Distribution Network for Perishable Products under Disruption Risks and Integration of Vehicle Routing.</em> A hybrid MILP model combining facility location, vehicle routing and shipment strategy with risk measures (VaR, CVaR), tested on a Bangladesh perishable-distribution case study.</span></li>
+    </ul>`
+},
+{ id:'archive', name:'Publication Archive', icon:'📚', labelH:8.5,
+  build(g){
+    B(8,0.4,6, BASE, 0,0,0, g); B(7,4,5, 0xe2d6c0, 0,0.4,0, g); prism(7.6,1.8,5.6, 0x7a4a2e, 0,4.4,0, g);
+    const bc = [0xc0392b, NV, 0x3f8a4a, OR, 0x6d4c8d, 0xe0b23a, 0x2f7fbf];
+    for(let i=0;i<11;i++){ const h = 2.4 + (i*37%10)/10; B(0.5,h,0.4, bc[i%7], -2.75+i*0.55,0.4,2.7, g); }
+  },
+  content:`
+    <div class="eyebrow">Publications</div><h2>Publication Archive</h2><p class="tag">Peer-reviewed work on the shelf</p>
+    <ul class="plain">
+      <li><strong>A hybrid distribution network model for cost, quality, and distribution optimization in perishable goods supply chains</strong><span class="sub">Samun, T. I., Mahmud, S., Rahman, M., &amp; Ridoy, M. M. H.</span><span class="sub mono">Malaysian Journal of Science and Advanced Technology, 5(1), 1–11 · 2025</span></li>
+      <li><strong>A fuzzy entropy-driven order-preserving gradient aggregation method with rank stability for prioritizing barriers to closed-loop polycarbonate recycling from waste mobile phones in developing economies</strong><span class="sub">Al Sharif, S., Akter, M. F., Samun, T. I., &amp; Soscho, M. M. A.</span><span class="sub mono">Waste Management Bulletin, 100330 · 2026</span></li>
+    </ul>`
+},
+{ id:'cement', name:'Cement Works', icon:'🏭', labelH:12.5,
+  build(g){
+    B(11,0.4,8, BASE, 0,0,0, g);
+    for(const x of [-2.6,-0.2,2.2]){ C(1.3,1.3,7,10, 0xc9c4ba, x,0.4,-1.6, g); K(1.3,1,10, 0xa9a39a, x,7.4,-1.6, g); }
+    B(4,3,3, 0xd8d2c6, 2.6,0.4,2, g); windows(g, 3, 1.6, 3.55, 1, 1); 
+    const conv = B(0.6,0.3,6, 0x666b73, -1,4,1.6, g); conv.rotation.x = 0.5;
+    C(0.5,0.65,10,8, 0xd8d2c6, -4.4,0.4,1.8, g); C(0.52,0.52,0.8,8, 0xc0392b, -4.4,8.8,1.8, g);
+    const smokeM = new THREE.MeshPhongMaterial({ color:0xeeeeee, flatShading:true, transparent:true, opacity:0.75, depthWrite:false });
+    const puffs = []; for(let k=0;k<5;k++){ const p = add(new THREE.IcosahedronGeometry(0.6,0), smokeM, -4.4,10.6,1.8, g); puffs.push({ p, k:k/5 }); }
+    anims.push(dt=> puffs.forEach(o=>{ o.k = (o.k + dt*0.18) % 1; o.p.position.set(-4.4 + o.k*1.5, 10.6 + o.k*5, 1.8); o.p.scale.setScalar(0.6 + o.k*2.2); }));
+  },
+  content:`
+    <div class="eyebrow">Industry Experience</div><h2>Cement Works</h2><p class="tag">Silos, conveyors and quality control</p>
+    <ul class="plain">
+      <li><strong>Industrial Trainee — Shun Shing Cement Mills Limited</strong><span class="sub mono">March 2024 – April 2024</span><span class="sub">Four weeks of training across production, maintenance, PLC and quality control, with hands-on automation, fault detection and ASTM/BDS quality testing.</span></li>
+    </ul>`
+},
+{ id:'club', name:'IoT Club House', icon:'📡', labelH:9,
+  build(g){
+    B(7,0.4,6, BASE, 0,0,0, g); B(6,3,5, 0xf6e7c8, 0,0.4,0, g); prism(6.8,2.2,5.6, 0xc0392b, 0,3.4,0, g);
+    B(1.2,2,0.08, 0x8a6a44, -1.2,0.4,2.54, g); windows(g, 2.4, 2, 2.53, 2, 1); 
+    C(0.06,0.08,5,6, 0x999999, 2,3.4,-1, g); B(1.4,0.06,0.06, 0x999999, 2,7.2,-1, g);
+    const led = S(0.2, new THREE.MeshBasicMaterial({ color:0xff3b30 }), 2,8.5,-1, g);
+    const nodes = []; for(const [x,z] of [[-3.4,3.6],[3.4,3.6],[3.6,-2.6]]){ C(0.07,0.07,1.2,5, 0x777777, x,0,z, g); nodes.push(S(0.16, new THREE.MeshBasicMaterial({ color:0x2ecc71 }), x,1.35,z, g)); }
+    anims.push((dt,t)=>{ led.visible = Math.sin(t*4) > 0; nodes.forEach((n,i)=>{ n.visible = Math.sin(t*3 + i*2) > -0.3; }); });
+  },
+  content:`
+    <div class="eyebrow">Extracurricular</div><h2>IoT Club House</h2><p class="tag">Keeping the books balanced</p>
+    <ul class="plain">
+      <li><strong>Finance Secretary — RUET IoT Club</strong><span class="sub mono">2023 – 2024</span><span class="sub">Managed budgets, sponsorships and fund allocation for events and projects, and oversaw seminar finances while supporting club courses and showcases.</span></li>
+    </ul>`
+},
+{ id:'depot', name:'Container Depot', icon:'📦', labelH:9.5,
+  build(g){
+    B(11,0.3,8, 0x9a958a, 0,0,0, g);
+    let i = 0;
+    for(const [x,z,n] of [[-3.2,-2,3],[-3.2,0.9,2],[0,-2,2],[0,0.9,1],[3.2,-2,1]]) for(let l=0;l<n;l++) B(2.8,1.25,1.25, cCols[i++%5], x,0.3+l*1.25,z, g);
+    for(const x of [-4.8,4.8]) for(const z of [-3,2]) B(0.3,5.5,0.3, OR, x,0.3,z, g);
+    B(10,0.5,0.4, OR, 0,5.8,-3, g); B(10,0.5,0.4, OR, 0,5.8,2, g);
+    const tr = new THREE.Group(); tr.position.y = 5.6; g.add(tr);
+    B(1,0.5,5.4, NV, 0,0.2,-0.5, tr); B(0.05,1.6,0.05, 0x333333, 0,-1.4,-0.5, tr); B(2.8,1.2,1.25, 0x3f8a4a, 0,-2.6,-0.5, tr);
+    C(0.08,0.08,3,6, 0x777777, 3.6,0.3,3.2, g);
+    const medal = new THREE.Group(); medal.position.set(3.6,3.9,3.2); g.add(medal);
+    add(new THREE.CylinderGeometry(0.75,0.75,0.15,10), 0xe0b23a, 0,0,0, medal).rotation.x = Math.PI/2;
+    add(new THREE.TorusGeometry(0.75,0.1,6,12), 0xc79a23, 0,0,0, medal);
+    anims.push((dt,t)=>{ tr.position.x = Math.sin(t*0.5)*3.4; medal.rotation.y = t; });
+  },
+  content:`
+    <div class="eyebrow">Certification · Skills</div><h2>Container Depot</h2><p class="tag">Tools of the trade, stacked and ready</p>
+    <ul class="plain">
+      <li><strong>Certified Supply Chain Analyst (CSCA™)</strong><span class="sub">International Supply Chain Education Alliance</span><span class="sub mono">2023 – 2026</span></li>
+    </ul>
+    <h3>Skills</h3>
+    <div class="chips"><span class="chip">Supply Chain Optimization</span><span class="chip">Lean (5S, Kaizen)</span><span class="chip">Python</span><span class="chip">MATLAB</span><span class="chip">AutoCAD</span><span class="chip">MasterCAM</span><span class="chip">MS Office</span></div>`
+}
+];
+
+/* ================= ENGINE: sections, labels, camera, panel ================= */
+const labelsEl = document.getElementById('labels');
+const labelEls = {}, pick = [], visited = new Set();
+const ringCount = SECTIONS.filter(s=>!s.center).length;
+let _k = 0;
+SECTIONS.forEach(s=>{
+  const g = new THREE.Group();
+  if(s.center){ s.angle = 0; s.pos = { x:0, z:0 }; }
+  else {
+    if(s.angle == null) s.angle = _k*360/ringCount;
+    _k++;
+    s.pos = polar(s.angle, s.r || RING);
+    g.position.set(s.pos.x, 0, s.pos.z);
+    g.rotation.y = s.angle*D2R + Math.PI;     // local +z faces the centre
+  }
+  s.build(g); scene.add(g);
+  g.traverse(o=>{ if(o.isMesh){ o.userData.id = s.id; pick.push(o); } });
+  const el = document.createElement('div');
+  el.className = 'label' + (s.center ? ' center' : '');
+  el.innerHTML = `<span class="ic">${s.icon}</span>${s.name}`;
+  el.addEventListener('click', ()=> select(s.id));
+  labelsEl.appendChild(el);
+  labelEls[s.id] = { el, pos:new THREE.Vector3(s.pos.x, s.labelH || 7, s.pos.z) };
+});
+if(typeof afterBuild === 'function') afterBuild();
+
+/* ---------- nav list ---------- */
+const navEl = document.getElementById('nav'), navList = document.getElementById('navList');
+SECTIONS.forEach(s=>{
+  const b = document.createElement('button');
+  b.className = 'navBtn'; b.dataset.id = s.id;
+  b.innerHTML = `<span class="dot"></span><span>${s.icon} ${s.name}</span>`;
+  b.addEventListener('click', ()=> select(s.id));
+  navList.appendChild(b);
+});
+document.getElementById('navTitle').addEventListener('click', ()=> navEl.classList.toggle('collapsed'));
+if(window.innerWidth <= 720) navEl.classList.add('collapsed');
+function updateNav(){
+  document.querySelectorAll('.navBtn').forEach(b=>{
+    b.classList.toggle('visited', visited.has(b.dataset.id));
+    b.classList.toggle('active', b.dataset.id === current);
+  });
+  document.getElementById('navCount').textContent = `${visited.size} / ${SECTIONS.length} ${COUNT_WORD}`;
+}
+
+/* ---------- camera ---------- */
+const HOME = { target:new THREE.Vector3(0,3,0), polar:1.08, radius:68 };
+const cam = { target:HOME.target.clone(), az:0.55, polar:HOME.polar, radius:HOME.radius };
+const goal = { az:cam.az, polar:cam.polar, radius:cam.radius };
+let flight = null;
+const wrap = a=>{ while(a>Math.PI) a-=TAU; while(a<-Math.PI) a+=TAU; return a; };
+const ease = t=> t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+function syncGoal(){ goal.az = cam.az; goal.polar = cam.polar; goal.radius = cam.radius; }
+function stopFlight(){ if(flight){ flight = null; syncGoal(); } }
+function flyTo(t, az, pol, rad, dur){
+  flight = { ft:cam.target.clone(), tt:t.clone(), fa:cam.az, da:wrap(az-cam.az), fp:cam.polar, tp:pol, fr:cam.radius, tr:rad, st:performance.now(), dur:dur||1200 };
+}
+function applyCam(){
+  const sp = Math.sin(cam.polar);
+  camera.position.set(cam.target.x + cam.radius*sp*Math.sin(cam.az), cam.target.y + cam.radius*Math.cos(cam.polar), cam.target.z + cam.radius*sp*Math.cos(cam.az));
+  if(camera.position.y < 1.5) camera.position.y = 1.5;
+  camera.lookAt(cam.target);
+}
+
+/* ---------- input ---------- */
+const pts = new Map();
+let drag = false, moved = 0, lx = 0, ly = 0, pinch0 = null, rad0 = 0;
+const pd = ()=>{ const a = [...pts.values()]; return Math.hypot(a[0].x-a[1].x, a[0].y-a[1].y); };
+canvas.addEventListener('pointerdown', e=>{
+  canvas.setPointerCapture(e.pointerId);
+  pts.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if(pts.size === 2){ stopFlight(); pinch0 = pd(); rad0 = goal.radius; drag = false; }
+  else { drag = true; moved = 0; lx = e.clientX; ly = e.clientY; }
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!pts.has(e.pointerId)) return;
+  pts.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if(pts.size >= 2){ if(pinch0) goal.radius = clamp(rad0*pinch0/pd(), 8, 115); return; }
+  if(!drag) return;
+  const dx = e.clientX-lx, dy = e.clientY-ly;
+  moved += Math.abs(dx) + Math.abs(dy); lx = e.clientX; ly = e.clientY;
+  if(moved < 5) return;
+  stopFlight();
+  goal.az -= dx*0.006;
+  goal.polar = clamp(goal.polar - dy*0.005, 0.35, 1.45);
+  hideHint();
+});
+function pointerEnd(e){
+  const tap = e.type === 'pointerup' && drag && moved < 5 && pts.size === 1;
+  pts.delete(e.pointerId);
+  if(pts.size < 2) pinch0 = null;
+  if(pts.size === 0) drag = false;
+  if(tap) pickAt(e.clientX, e.clientY);
+}
+canvas.addEventListener('pointerup', pointerEnd);
+canvas.addEventListener('pointercancel', pointerEnd);
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault(); stopFlight();
+  goal.radius = clamp(goal.radius*Math.exp(clamp(e.deltaY,-200,200)*0.0015), 8, 115);
+  hideHint();
+}, { passive:false });
+const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
+function pickAt(x, y){
+  mv.set((x/window.innerWidth)*2-1, -(y/window.innerHeight)*2+1);
+  ray.setFromCamera(mv, camera);
+  const hit = ray.intersectObjects(pick, false)[0];
+  if(hit) select(hit.object.userData.id);
+}
+
+/* ---------- panel ---------- */
+const panel = document.getElementById('panel'), panelContent = document.getElementById('panelContent');
+let current = null, panelOpen = false;
+function select(id){
+  const i = SECTIONS.findIndex(s=>s.id===id); if(i < 0) return;
+  const s = SECTIONS[i];
+  current = id; panelOpen = true; visited.add(id);
+  const az = s.center ? cam.az : s.angle*D2R + Math.PI;
+  let pol = s.center ? 0.95 : 1.05, rad = s.camR || 21;
+  const t = new THREE.Vector3(s.pos.x, s.focusY || 3, s.pos.z);
+  if(window.innerWidth <= 720){ rad *= 1.6; pol = 0.9; t.y -= rad*0.3; }
+  else {
+    const pw = Math.min(420, window.innerWidth*0.92);
+    const halfW = rad*Math.tan(camera.fov*D2R/2)*camera.aspect;
+    const sh = (pw/2)/(window.innerWidth/2)*halfW;
+    t.x += Math.cos(az)*sh; t.z -= Math.sin(az)*sh;
+  }
+  flyTo(t, az, pol, rad, 1300);
+  const prev = SECTIONS[(i-1+SECTIONS.length)%SECTIONS.length], next = SECTIONS[(i+1)%SECTIONS.length];
+  panelContent.innerHTML = s.content + `<div class="panelNav"><button data-nav="${prev.id}">← ${prev.icon} ${prev.name}</button><span>${i+1} / ${SECTIONS.length}</span><button data-nav="${next.id}">${next.icon} ${next.name} →</button></div>`;
+  panel.scrollTop = 0; panel.classList.add('open');
+  updateNav(); hideHint();
+}
+function deselect(){
+  current = null; panelOpen = false; panel.classList.remove('open');
+  flyTo(HOME.target, cam.az, HOME.polar, HOME.radius, 1200); updateNav();
+}
+panelContent.addEventListener('click', e=>{ const b = e.target.closest('[data-nav]'); if(b) select(b.dataset.nav); });
+document.getElementById('closePanel').addEventListener('click', deselect);
+document.getElementById('homeBtn').addEventListener('click', deselect);
+window.addEventListener('keydown', e=>{ if(e.key === 'Escape' && panelOpen) deselect(); });
+
+/* ---------- labels ---------- */
+const _v = new THREE.Vector3();
+function updateLabels(){
+  const W = window.innerWidth, H = window.innerHeight;
+  for(const id in labelEls){
+    const L = labelEls[id];
+    _v.copy(L.pos).project(camera);
+    if(_v.z > 1 || (panelOpen && id === current)){ L.el.style.opacity = '0'; L.el.style.pointerEvents = 'none'; continue; }
+    const d = camera.position.distanceTo(L.pos), sc = clamp(34/d, 0.72, 1.15);
+    L.el.style.transform = `translate(${(_v.x*0.5+0.5)*W}px,${(-_v.y*0.5+0.5)*H}px) translate(-50%,-100%) scale(${sc})`;
+    L.el.style.opacity = '1'; L.el.style.pointerEvents = 'auto';
+    L.el.classList.toggle('visited', visited.has(id));
+  }
+}
+
+/* ---------- hint, intro, resize ---------- */
+const hintEl = document.getElementById('hint');
+function hideHint(){ hintEl.classList.add('fade'); }
+setTimeout(hideHint, 9000);
+document.getElementById('enterBtn').addEventListener('click', ()=> document.getElementById('intro').classList.add('hidden'));
+function onResize(){
+  camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', onResize); onResize();
+updateNav();
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock(); let T = 0;
+function loop(){
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05); T += dt;
+  if(flight){
+    let p = (performance.now()-flight.st)/flight.dur; if(p > 1) p = 1;
+    const e = ease(p);
+    cam.target.lerpVectors(flight.ft, flight.tt, e);
+    cam.az = flight.fa + flight.da*e;
+    cam.polar = flight.fp + (flight.tp-flight.fp)*e;
+    cam.radius = flight.fr + (flight.tr-flight.fr)*e;
+    if(p >= 1) flight = null;
+    syncGoal();
+  } else {
+    const k = 1 - Math.exp(-dt*10);
+    cam.az += wrap(goal.az-cam.az)*k; cam.polar += (goal.polar-cam.polar)*k; cam.radius += (goal.radius-cam.radius)*k;
+  }
+  applyCam();
+  for(let i=0;i<anims.length;i++) anims[i](dt, T);
+  updateLabels();
+  renderer.render(scene, camera);
+}
+loop();
+</script>
+</body>
+</html>
